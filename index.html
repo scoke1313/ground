@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=393, height=712, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>둥둥그라운드 v1.6.2.9 - 표정 복구 정밀 수정</title>
+    <title>둥둥그라운드 v1.6.2.9 - 표정 복구 완결판</title>
     <style>
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
         body { margin: 0; padding: 0; background-color: #333; font-family: 'Pretendard', sans-serif; overflow: hidden; touch-action: none; user-select: none; display: flex; justify-content: center; align-items: center; height: 100vh; }
@@ -79,11 +78,10 @@
     let pDir = 1, objects = [], clouds = [], fx = [];
     let stopSpawning = false, mountainX = 0, grassX = 0, hitShakeFrame = 0;
     
-    // 표정 관리 변수
+    // 표정 관리
     let faceTimer = 0;
     let currentFace = 'normal';
 
-    let flashFrame = 0, flashColor = "rgba(255, 0, 0, 0.3)";
     let currentRotation = 0, rotVel = 0;
     const targetRotationLeft = 0, targetRotationRight = -27 * Math.PI / 180;
     const springK = 0.18, friction = 0.75; 
@@ -119,8 +117,6 @@
         const spawnY = HEIGHT + 200;
 
         if(type === 'BAD') {
-            const tooClose = objects.some(o => o.type === 'BAD' && Math.abs(o.x - x) < 180); 
-            if(tooClose) x = (x + 250) % (WIDTH - 120) + 60;
             objects.push({ x, y: spawnY, type: 'BAD', img: imgs.heli });
         } else if(type === 'GOLD') {
             objects.push({ x, y: spawnY, type: 'GOLD', img: imgs.gold });
@@ -140,8 +136,8 @@
 
     function triggerGoldFever() {
         currentFace = 'happy';
-        faceTimer = 78; // 1.3초 고정
-        objects.forEach(o => { if(o.type === 'CRATE') score++; fx.push({ x: o.x, y: o.y, img: imgs.effect, life: 108, follow: false, vx: 0, vy: -GLOBAL_SPEED, type: 'PICKUP' }); });
+        faceTimer = 78; // 1.3초 복귀 설정
+        objects.forEach(o => { if(o.type === 'CRATE') score++; fx.push({ x: o.x, y: o.y, img: imgs.effect, life: 108, follow: false, vx: 0, vy: -GLOBAL_SPEED }); });
         objects = [];
     }
 
@@ -160,7 +156,8 @@
     function loop() {
         if(state === 'END') return;
         frame++; 
-        const scrollSpeed = (state === 'LANDED') ? 0 : 10; 
+        
+        // 회전 물리
         let targetRot = (pDir === 1) ? targetRotationLeft : targetRotationRight;
         let force = (targetRot - currentRotation) * springK;
         rotVel = (rotVel + force) * friction;
@@ -169,7 +166,7 @@
         if(state === 'PLAY') {
             dist -= 1.41; 
             mountainX -= pDir * 1.8; 
-            grassX -= pDir * scrollSpeed;
+            grassX -= pDir * 10;
         }
 
         document.getElementById('dist-val').innerText = Math.max(0, Math.floor(dist));
@@ -180,25 +177,15 @@
             if(landY > targetArrivalY) landY -= GLOBAL_SPEED; 
             else {
                 landY = targetArrivalY;
-                if(dist <= 5) { 
-                    dist = 0; state = 'LANDED'; 
-                    setTimeout(() => { if(state !== 'END') gameOver("작전 완료!"); }, 500); 
-                }
+                if(dist <= 5) { dist = 0; state = 'LANDED'; setTimeout(() => gameOver("작전 완료!"), 500); }
             }
             stopSpawning = true;
         }
 
         if(state === 'PLAY') {
-            const spawnInterval = 7 + Math.floor(Math.random() * 4);
-            if(frame % spawnInterval === 0) spawnObj();
+            if(frame % 10 === 0) spawnObj();
             if(frame % 80 === 0) spawnCloud();
         }
-
-        clouds.forEach((c, i) => { 
-            c.y -= (state === 'LANDED') ? 0 : c.speed; 
-            c.x -= (state === 'LANDED') ? 0 : pDir * c.speed * 0.3; 
-            if(c.y < -350) clouds.splice(i,1); 
-        });
 
         objects.forEach((o, i) => {
             o.y -= GLOBAL_SPEED; o.x -= pDir * 10;
@@ -207,26 +194,24 @@
             const dx = pX - o.x, dy = pY - o.y;
             if(state === 'PLAY' && Math.sqrt(dx*dx + dy*dy) < 115) {
                 if(o.type === 'BAD') {
-                    lives--; updateLifeUI(); hitShakeFrame = 10; flashFrame = 10;
-                    currentFace = 'miss'; 
-                    faceTimer = 78; // 1.3초 고정
-                    fx.push({ x: pX + 90, y: pY - 140, img: imgs.damage, life: 40, follow: true, type: 'DAMAGE', scale: 0.8 });
-                    if(lives <= 0) setTimeout(() => { gameOver("작전 실패..."); }, 500);
+                    lives--; updateLifeUI(); hitShakeFrame = 10;
+                    currentFace = 'miss'; faceTimer = 78; // 헬기 충돌 -> 1.3초 miss 표정
+                    fx.push({ x: pX + 90, y: pY - 140, img: imgs.damage, life: 40, follow: true });
+                    if(lives <= 0) setTimeout(() => gameOver("작전 실패..."), 500);
                 } else if(o.type === 'GOLD') {
-                    triggerGoldFever();
+                    triggerGoldFever(); // 황금고구마 -> 1.3초 행복 표정
                 } else {
                     score++; 
-                    currentFace = 'happy'; 
-                    faceTimer = 78; // 요청하신 대로 보급상자 획득 시에도 1.3초 유지
-                    fx.push({ x: o.x, y: o.y, img: imgs.effect, life: 108, follow: false, vy: -GLOBAL_SPEED, type: 'PICKUP' }); 
+                    currentFace = 'happy'; faceTimer = 78; // 보급상자 -> 1.3초 행복 표정
+                    fx.push({ x: o.x, y: o.y, img: imgs.effect, life: 60, follow: false, vy: -GLOBAL_SPEED }); 
                 }
                 objects.splice(i, 1);
             }
         });
 
-        fx.forEach((f, i) => { if(f.life > 0) f.life--; else fx.splice(i, 1); if(!f.follow) { f.x -= pDir * 10; f.y += f.vy; if(f.y < -150) fx.splice(i, 1); } });
+        clouds.forEach(c => { c.y -= c.speed; c.x -= pDir * c.speed * 0.3; });
+        fx.forEach((f, i) => { f.life--; if(f.life <= 0) fx.splice(i, 1); if(!f.follow) { f.x -= pDir * 10; f.y += f.vy || 0; } });
         if(hitShakeFrame > 0) hitShakeFrame--;
-        if(flashFrame > 0) flashFrame--; 
         
         draw();
         requestAnimationFrame(loop);
@@ -236,7 +221,7 @@
         ctx.clearRect(0, 0, WIDTH, HEIGHT);
         ctx.fillStyle = '#C0EEFE'; ctx.fillRect(0, 0, WIDTH, HEIGHT);
         
-        clouds.sort((a, b) => b.depth - a.depth).forEach(c => {
+        clouds.forEach(c => {
             ctx.save(); ctx.globalAlpha = c.alpha;
             ctx.drawImage(c.img, c.x - (300*c.scale)/2, c.y, 300*c.scale, 180*c.scale);
             ctx.restore();
@@ -251,48 +236,31 @@
                 for(let x = -3; x <= 3; x++) ctx.drawImage(imgs.mountain, ((mountainX * 1.0) % mW) + (x * mW), landY - mH, mW, mH);
             }
             if(imgs.grass.complete) {
-                ctx.fillStyle = '#7AC6A6'; ctx.fillRect(0, landY, WIDTH, HEIGHT + 1200);
+                ctx.fillStyle = '#7AC6A6'; ctx.fillRect(0, landY, WIDTH, HEIGHT);
                 for(let x = -2; x <= 2; x++) ctx.drawImage(imgs.grass, ((grassX * 1.0) % WIDTH) + (x * WIDTH), landY, WIDTH, 370);
             }
             if(imgs.target.complete) ctx.drawImage(imgs.target, pX - 120, landY + 100, 240, 240);
         }
 
-        objects.forEach(o => {
-            if(o.type === 'GOLD') { ctx.save(); ctx.shadowBlur = 30; ctx.shadowColor = "yellow"; ctx.drawImage(o.img, o.x - 50, o.y, 100, 100); ctx.restore(); }
-            else if(o.type === 'BAD') { ctx.drawImage(o.img, o.x - (216 * 1.065)/2, o.y, 216 * 1.065, 146 * 1.065); }
-            else ctx.drawImage(o.img, o.x - 50, o.y, 100, 100);
-        });
+        objects.forEach(o => ctx.drawImage(o.img, o.x - 55, o.y - 55, 110, 110));
 
-        // 춘식이 본체 렌더링
+        // 춘식이 본체 및 표정 복구 로직
         ctx.save();
         let sX = (hitShakeFrame > 0) ? (Math.random() - 0.5) * 25 : 0;
         ctx.translate(pX + sX, pY + Math.sin(frame*0.08)*7.5);
         ctx.rotate(currentRotation); 
         
-        if(hitShakeFrame % 4 > 1) ctx.globalAlpha = 0.5;
-
-        // 표정 복구 로직: Timer가 0보다 클 때만 특수 표정, 아니면 무조건 일반 표정
         let pImg = imgs.player;
         if(faceTimer > 0) {
             pImg = (currentFace === 'happy') ? imgs.face_happy : imgs.face_miss;
-            faceTimer--; // loop가 아닌 draw에서 실시간 차감하여 렌더링과 동기화
+            faceTimer--; // 타이머 차감
         }
 
-        if(pImg && pImg.complete) { ctx.drawImage(pImg, -143, -143, 286, 286); }
+        if(pImg && pImg.complete) ctx.drawImage(pImg, -143, -143, 286, 286);
         ctx.restore();
 
-        fx.forEach(f => {
-            ctx.save();
-            let opacity = 1.0;
-            const totalLife = 108; if(f.type === 'PICKUP') { if(f.life > 102) opacity = (108 - f.life) / 6; else if(f.life <= 12) opacity = f.life / 12; }
-            ctx.globalAlpha = opacity;
-            const bW = 140, bH = 84, sc = f.scale || 1.0;
-            ctx.drawImage(f.img, (f.follow ? (f.type === 'DAMAGE' ? pX + 90 : pX) : f.x) - (bW * sc)/2, (f.follow ? pY : f.y) - 100, bW * sc, bH * sc);
-            ctx.restore();
-        });
+        fx.forEach(f => { ctx.save(); ctx.globalAlpha = f.life/40; ctx.drawImage(f.img, (f.follow ? pX + 90 : f.x) - 70, (f.follow ? pY : f.y) - 100, 140, 84); ctx.restore(); });
         ctx.restore(); 
-
-        if(flashFrame > 0) { ctx.fillStyle = flashColor; ctx.fillRect(0, 0, WIDTH, HEIGHT); }
     }
     draw();
 </script>
