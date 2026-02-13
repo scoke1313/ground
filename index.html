@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=393, height=712, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>둥둥그라운드 v1.6.2.6 - 세로 712 최적화</title>
+    <title>둥둥그라운드 v1.6.2.7 - HUD 시각 최적화</title>
     <style>
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
         body { margin: 0; padding: 0; background-color: #333; font-family: 'Pretendard', sans-serif; overflow: hidden; touch-action: none; user-select: none; display: flex; justify-content: center; align-items: center; height: 100vh; }
@@ -13,8 +13,12 @@
         .nav-bar img { width: 100%; display: block; }
         .hud-info { width: 100%; padding: 15px 20px; box-sizing: border-box; display: flex; justify-content: space-between; align-items: flex-start; }
         
-        .dist-val-wrap { font-size: 32px; font-weight: 800; color: #000; letter-spacing: -1px; line-height: 1; }
-        .combined-badge { background: #fff; padding: 6px 14px; border-radius: 30px; display: flex; align-items: center; gap: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        /* 미터표시: 굵기 800 유지, 위치 2px 하단 이동 */
+        .dist-val-wrap { font-size: 32px; font-weight: 800; color: #000; letter-spacing: -1px; line-height: 1; margin-top: 2px; }
+        
+        /* 배경박스: 그림자 삭제(box-shadow: none) */
+        .combined-badge { background: #fff; padding: 6px 14px; border-radius: 30px; display: flex; align-items: center; gap: 12px; box-shadow: none; }
+        
         .life-icon { width: 30px; height: 30px; object-fit: contain; }
         .score-icon { width: 30px; height: 30px; object-fit: contain; margin-right: 6px; }
         #life-container { display: flex; gap: 4px; padding-left: 5px; } 
@@ -34,7 +38,7 @@
         <div class="nav-bar"><img src="ingae_Navigation.png"></div>
         <div class="hud-info">
             <div class="dist-group">
-                <span style="font-size:14px; font-weight:600; color:#555;">현재 고도</span>
+                <span style="font-size:14px; font-weight:500; color:#555;">현재 고도</span>
                 <div class="dist-val-wrap"><span id="dist-val">1500</span>m</div>
             </div>
             <div class="combined-badge">
