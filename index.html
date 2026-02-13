@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=393, height=712, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>둥둥그라운드 v1.6.2.2 - 보급상자 강화 버전</title>
+    <title>둥둥그라운드 v1.6.2.6 - 세로 712 최적화</title>
     <style>
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
         body { margin: 0; padding: 0; background-color: #333; font-family: 'Pretendard', sans-serif; overflow: hidden; touch-action: none; user-select: none; display: flex; justify-content: center; align-items: center; height: 100vh; }
@@ -12,12 +12,15 @@
         #hud { position: absolute; top: 0; left: 0; width: 100%; z-index: 50; display: none; pointer-events: none; }
         .nav-bar img { width: 100%; display: block; }
         .hud-info { width: 100%; padding: 15px 20px; box-sizing: border-box; display: flex; justify-content: space-between; align-items: flex-start; }
-        .dist-val-wrap { font-size: 32px; font-weight: 900; color: #000; letter-spacing: -1px; line-height: 1; }
+        
+        .dist-val-wrap { font-size: 32px; font-weight: 800; color: #000; letter-spacing: -1px; line-height: 1; }
         .combined-badge { background: #fff; padding: 6px 14px; border-radius: 30px; display: flex; align-items: center; gap: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         .life-icon { width: 30px; height: 30px; object-fit: contain; }
         .score-icon { width: 30px; height: 30px; object-fit: contain; margin-right: 6px; }
         #life-container { display: flex; gap: 4px; padding-left: 5px; } 
         #result-screen { position: absolute; inset: 0; background: rgba(0,0,0,0.8); z-index: 200; display: none; flex-direction: column; justify-content: center; align-items: center; color: white; text-align: center; }
+        
+        #score-val { font-size: 20px; font-weight: 600; }
     </style>
 </head>
 <body>
@@ -31,13 +34,13 @@
         <div class="nav-bar"><img src="ingae_Navigation.png"></div>
         <div class="hud-info">
             <div class="dist-group">
-                <span style="font-size:16px; font-weight:bold; color:#555;">고도</span>
+                <span style="font-size:14px; font-weight:600; color:#555;">현재 고도</span>
                 <div class="dist-val-wrap"><span id="dist-val">1500</span>m</div>
             </div>
             <div class="combined-badge">
                 <div class="score-item" style="display:flex; align-items:center;">
                     <img src="create_s.png" class="score-icon">
-                    <span id="score-val" style="font-size:22px; font-weight:800;">0</span>
+                    <span id="score-val">0</span>
                 </div>
                 <div id="life-container">
                     <img id="life-0" src="mini_life.png" class="life-icon">
@@ -96,13 +99,8 @@
     }
 
     function refillSpawnDeck() {
-        // 보급상자(CRATE) 비중을 대폭 늘려 1.5배 더 자주 나오게 구성
-        let newItems = [
-            'GOLD', 'BAD', 'BAD', 'BAD', 'BAD', 'BAD', 'BAD', 'BAD', 'BAD', 'BAD', 'BAD'
-        ];
-        // 기존 대비 CRATE 아이템을 약 1.5배(60개 -> 90개) 늘림
+        let newItems = ['GOLD', 'BAD', 'BAD', 'BAD', 'BAD', 'BAD', 'BAD', 'BAD', 'BAD', 'BAD', 'BAD'];
         for(let i=0; i<90; i++) { newItems.push('CRATE'); }
-
         for (let i = newItems.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [newItems[i], newItems[j]] = [newItems[j], newItems[i]]; }
         spawnDeck = [...spawnDeck, ...newItems];
     }
@@ -127,18 +125,14 @@
         } else if(type === 'GOLD') {
             objects.push({ x, y: spawnY, type: 'GOLD', img: imgs.gold });
         } else {
-            // 보급상자 패턴 다양화
             const patternRand = Math.random();
             if(patternRand > 0.85) { 
-                // 패턴 1: 수평 나란히 2개
                 objects.push({ x: Math.max(80, x - 70), y: spawnY, type: 'CRATE', img: imgs.crate });
                 objects.push({ x: Math.min(WIDTH - 80, x + 70), y: spawnY, type: 'CRATE', img: imgs.crate });
             } else if(patternRand > 0.7) {
-                // 패턴 2: 약간의 높이차를 둔 계단식 2개
                 objects.push({ x, y: spawnY, type: 'CRATE', img: imgs.crate });
                 objects.push({ x: (x + 150) % (WIDTH - 120) + 60, y: spawnY + 120, type: 'CRATE', img: imgs.crate });
             } else {
-                // 패턴 3: 기본 단일 생성
                 objects.push({ x, y: spawnY, type: 'CRATE', img: imgs.crate });
             }
         }
@@ -214,9 +208,8 @@
             if(state === 'PLAY' && Math.sqrt(dx*dx + dy*dy) < 115) {
                 if(o.type === 'BAD') {
                     lives--; updateLifeUI(); hitShakeFrame = 10; flashFrame = 10;
-                    currentFace = 'miss';
-                    faceTimer = 78;
-                    fx.push({ x: pX, y: pY - 140, img: imgs.damage, life: 40, follow: true, type: 'DAMAGE', scale: 0.8 });
+                    currentFace = 'miss'; faceTimer = 78;
+                    fx.push({ x: pX + 90, y: pY - 140, img: imgs.damage, life: 40, follow: true, type: 'DAMAGE', scale: 0.8 });
                     if(lives <= 0) setTimeout(() => { gameOver("작전 실패..."); }, 500);
                 } else if(o.type === 'GOLD') triggerGoldFever();
                 else { score++; fx.push({ x: o.x, y: o.y, img: imgs.effect, life: 108, follow: false, vy: -GLOBAL_SPEED, type: 'PICKUP' }); }
@@ -248,14 +241,14 @@
 
         if(dist < 150) {
             if(imgs.mountain.complete) {
-                const mImg = imgs.mountain, mScale = 1.65, mWidth = 600 * mScale, mHeight = 120 * mScale;
-                const mRelX = (mountainX * 1.0) % mWidth;
-                for(let x = -3; x <= 3; x++) ctx.drawImage(mImg, mRelX + (x * mWidth), landY - mHeight, mWidth, mHeight);
+                const mImg = imgs.mountain, mScale = 1.65, mW = 600 * mScale, mH = 120 * mScale;
+                const mRelX = (mountainX * 1.0) % mW;
+                for(let x = -3; x <= 3; x++) ctx.drawImage(mImg, mRelX + (x * mW), landY - mH, mW, mH);
             }
             if(imgs.grass.complete) {
-                const gImg = imgs.grass, gWidth = WIDTH, gHeight = 185 * 2, relX = (grassX * 1.0) % gWidth;
+                const gImg = imgs.grass, gW = WIDTH, gH = 185 * 2, relX = (grassX * 1.0) % gW;
                 ctx.fillStyle = '#7AC6A6'; ctx.fillRect(0, landY, WIDTH, HEIGHT + 1200);
-                for(let x = -2; x <= 2; x++) ctx.drawImage(gImg, relX + (x * gWidth), landY, gWidth, gHeight);
+                for(let x = -2; x <= 2; x++) ctx.drawImage(gImg, relX + (x * gW), landY, gW, gH);
             }
             if(imgs.target.complete) {
                 const tImg = imgs.target, tW = 240, tH = tW * (tImg.naturalHeight / tImg.naturalWidth);
@@ -284,25 +277,18 @@
         
         if(hitShakeFrame % 4 > 1) ctx.globalAlpha = 0.5;
 
-        let playerImg = imgs.player;
-        if(faceTimer > 0) {
-            playerImg = (currentFace === 'happy') ? imgs.face_happy : imgs.face_miss;
-            faceTimer--;
-        }
-
-        if(playerImg && playerImg.complete) {
-            ctx.drawImage(playerImg, -143, -143, 286, 286);
-        }
+        let pImg = (faceTimer > 0) ? (currentFace === 'happy' ? imgs.face_happy : imgs.face_miss) : imgs.player;
+        if(pImg && pImg.complete) { ctx.drawImage(pImg, -143, -143, 286, 286); }
         ctx.restore();
 
         fx.forEach(f => {
             ctx.save();
             let opacity = 1.0;
-            const totalLife = 108; const fadeInFrame = 6; const fadeOutFrame = 12;
-            if(f.type === 'PICKUP') { if(f.life > totalLife - fadeInFrame) opacity = (totalLife - f.life) / fadeInFrame; else if(f.life <= fadeOutFrame) opacity = f.life / fadeOutFrame; }
+            const totalLife = 108; const fadeIn = 6; const fadeOut = 12;
+            if(f.type === 'PICKUP') { if(f.life > totalLife - fadeIn) opacity = (totalLife - f.life) / fadeIn; else if(f.life <= fadeOut) opacity = f.life / fadeOut; }
             ctx.globalAlpha = opacity;
-            const baseW = 140, baseH = 84, drawScale = f.scale || 1.0;
-            ctx.drawImage(f.img, (f.follow ? pX : f.x) - (baseW * drawScale)/2, (f.follow ? pY : f.y) - 100, baseW * drawScale, baseH * drawScale);
+            const baseW = 140, baseH = 84, scale = f.scale || 1.0;
+            ctx.drawImage(f.img, (f.follow ? (f.type === 'DAMAGE' ? pX + 90 : pX) : f.x) - (baseW * scale)/2, (f.follow ? pY : f.y) - 100, baseW * scale, baseH * scale);
             ctx.restore();
         });
         ctx.restore(); 
