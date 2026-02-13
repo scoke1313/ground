@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=393, height=712, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>둥둥그라운드 v1.6.2.9 - 표정 복구 완결판</title>
+    <title>둥둥그라운드 v1.6.2.9 - 표정 및 타겟 수복</title>
     <style>
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
         body { margin: 0; padding: 0; background-color: #333; font-family: 'Pretendard', sans-serif; overflow: hidden; touch-action: none; user-select: none; display: flex; justify-content: center; align-items: center; height: 100vh; }
@@ -78,7 +78,6 @@
     let pDir = 1, objects = [], clouds = [], fx = [];
     let stopSpawning = false, mountainX = 0, grassX = 0, hitShakeFrame = 0;
     
-    // 표정 관리
     let faceTimer = 0;
     let currentFace = 'normal';
 
@@ -135,8 +134,8 @@
     }
 
     function triggerGoldFever() {
-        currentFace = 'happy';
-        faceTimer = 78; // 1.3초 복귀 설정
+        currentFace = 'happy'; // 고구마 획득 시에만 행복 표정
+        faceTimer = 78;
         objects.forEach(o => { if(o.type === 'CRATE') score++; fx.push({ x: o.x, y: o.y, img: imgs.effect, life: 108, follow: false, vx: 0, vy: -GLOBAL_SPEED }); });
         objects = [];
     }
@@ -157,7 +156,6 @@
         if(state === 'END') return;
         frame++; 
         
-        // 회전 물리
         let targetRot = (pDir === 1) ? targetRotationLeft : targetRotationRight;
         let force = (targetRot - currentRotation) * springK;
         rotVel = (rotVel + force) * friction;
@@ -195,14 +193,14 @@
             if(state === 'PLAY' && Math.sqrt(dx*dx + dy*dy) < 115) {
                 if(o.type === 'BAD') {
                     lives--; updateLifeUI(); hitShakeFrame = 10;
-                    currentFace = 'miss'; faceTimer = 78; // 헬기 충돌 -> 1.3초 miss 표정
+                    currentFace = 'miss'; faceTimer = 78; // 헬기 충돌 시 miss 표정
                     fx.push({ x: pX + 90, y: pY - 140, img: imgs.damage, life: 40, follow: true });
                     if(lives <= 0) setTimeout(() => gameOver("작전 실패..."), 500);
                 } else if(o.type === 'GOLD') {
-                    triggerGoldFever(); // 황금고구마 -> 1.3초 행복 표정
+                    triggerGoldFever(); 
                 } else {
                     score++; 
-                    currentFace = 'happy'; faceTimer = 78; // 보급상자 -> 1.3초 행복 표정
+                    // 상자 획득 시에는 faceTimer를 건드리지 않아 기본 표정 유지
                     fx.push({ x: o.x, y: o.y, img: imgs.effect, life: 60, follow: false, vy: -GLOBAL_SPEED }); 
                 }
                 objects.splice(i, 1);
@@ -239,21 +237,25 @@
                 ctx.fillStyle = '#7AC6A6'; ctx.fillRect(0, landY, WIDTH, HEIGHT);
                 for(let x = -2; x <= 2; x++) ctx.drawImage(imgs.grass, ((grassX * 1.0) % WIDTH) + (x * WIDTH), landY, WIDTH, 370);
             }
-            if(imgs.target.complete) ctx.drawImage(imgs.target, pX - 120, landY + 100, 240, 240);
+            if(imgs.target.complete) {
+                // 타겟 마크 비율 수복 (정사각형 240x240 고정)
+                ctx.drawImage(imgs.target, pX - 120, landY + 100, 240, 240);
+            }
         }
 
         objects.forEach(o => ctx.drawImage(o.img, o.x - 55, o.y - 55, 110, 110));
 
-        // 춘식이 본체 및 표정 복구 로직
         ctx.save();
         let sX = (hitShakeFrame > 0) ? (Math.random() - 0.5) * 25 : 0;
         ctx.translate(pX + sX, pY + Math.sin(frame*0.08)*7.5);
         ctx.rotate(currentRotation); 
         
+        if(hitShakeFrame % 4 > 1) ctx.globalAlpha = 0.5;
+
         let pImg = imgs.player;
         if(faceTimer > 0) {
             pImg = (currentFace === 'happy') ? imgs.face_happy : imgs.face_miss;
-            faceTimer--; // 타이머 차감
+            faceTimer--;
         }
 
         if(pImg && pImg.complete) ctx.drawImage(pImg, -143, -143, 286, 286);
